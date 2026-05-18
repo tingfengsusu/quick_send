@@ -117,7 +117,7 @@
 // ============================================================
 //  配置区：部署时修改为实际后端 API 地址
 // ============================================================
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://clip-say-lyricism.ngrok-free.dev';
 // ============================================================
 
 const STORAGE_KEY = 'quick_send_profile';
@@ -213,7 +213,7 @@ async function generateQR() {
   try {
     const resp = await fetch(`${API_BASE}/create_share`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: JSON.stringify({ data: shareData, expire_minutes: 5 }),
     });
     if (!resp.ok) {
