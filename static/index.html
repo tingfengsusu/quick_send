@@ -25,9 +25,19 @@
   }
   .card-title{font-size:.95rem;font-weight:600;color:#1a1a2e;margin-bottom:.85rem;display:flex;align-items:center;gap:.35rem}
   .card-title .icon{font-size:1.1rem}
-  .field{margin-bottom:.75rem}
-  .field:last-child{margin-bottom:0}
-  .field label{display:block;font-size:.8rem;color:#777;margin-bottom:.3rem}
+  .field{margin-bottom:.65rem;position:relative}
+  .field-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
+  .field-header label{font-size:.8rem;color:#777}
+  .field-label-input{
+    font-size:.8rem;color:#2c3e50;border:1px dashed #d0d0d0;border-radius:4px;
+    padding:.2rem .4rem;width:60%;outline:none;font-family:inherit;background:#fafafa
+  }
+  .field-label-input:focus{border-color:#4a90d9;background:#fff}
+  .btn-delete{
+    background:none;border:none;color:#ccc;font-size:1rem;cursor:pointer;
+    padding:.15rem .35rem;border-radius:4px;line-height:1;transition:color .15s
+  }
+  .btn-delete:hover{color:#e74c3c}
   .field input,.field textarea{
     width:100%;padding:.55rem .65rem;border:1px solid #e0e0e0;border-radius:8px;
     font-size:.9rem;color:#2c3e50;outline:none;transition:border-color .2s;
@@ -35,7 +45,6 @@
   }
   .field input:focus,.field textarea:focus{border-color:#4a90d9}
   .field textarea{min-height:3.5rem}
-  .field-hint{font-size:.72rem;color:#bbb;margin-top:.2rem}
   .btn{
     display:block;width:100%;padding:.6rem;border:none;border-radius:8px;
     font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s,transform .1s;
@@ -44,12 +53,23 @@
   .btn:active{transform:scale(.98)}
   .btn-save{background:#f0f4f8;color:#4a90d9;margin-top:.5rem}
   .btn-share{background:#1a1a2e;color:#fff;margin-top:.85rem}
-  .btn:disabled{opacity:.5;pointer-events:none}
-  .checkbox-group{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin-bottom:.25rem}
-  .checkbox-group label{
-    display:flex;align-items:center;gap:.3rem;font-size:.85rem;color:#444;cursor:pointer
+  .btn-add{
+    background:none;border:1.5px dashed #d0d0d0;color:#999;margin-top:.3rem;
+    padding:.5rem;border-radius:8px;font-size:.85rem;font-weight:500
   }
-  .checkbox-group input[type=checkbox]{width:1rem;height:1rem;accent-color:#1a1a2e}
+  .btn-add:hover{border-color:#4a90d9;color:#4a90d9}
+  .btn-copy{
+    background:#f0f4f8;color:#4a90d9;margin-top:.5rem;font-size:.85rem
+  }
+  .btn:disabled{opacity:.5;pointer-events:none}
+  .checkbox-group{display:flex;flex-wrap:wrap;gap:.5rem .9rem;margin-bottom:.25rem}
+  .checkbox-group label{
+    display:flex;align-items:center;gap:.25rem;font-size:.83rem;color:#444;cursor:pointer;
+    background:#f8f9fb;padding:.25rem .55rem;border-radius:6px
+  }
+  .checkbox-group input[type=checkbox]{width:.95rem;height:.95rem;accent-color:#1a1a2e}
+  .checkbox-group label:has(input:checked){background:#e8edf5}
+  .checkbox-sep{border-top:1px solid #eee;margin:.5rem 0 .3rem}
   .qr-section{text-align:center}
   .qr-section img{max-width:200px;width:100%;border-radius:8px;margin:.6rem 0}
   .qr-section .hint{font-size:.75rem;color:#999;margin-top:.4rem}
@@ -75,38 +95,16 @@
   <!-- 信息表单 -->
   <div class="card">
     <div class="card-title"><span class="icon">📝</span>我的信息</div>
-    <div class="field">
-      <label>手机号</label>
-      <input type="tel" id="phone" placeholder="请输入手机号" maxlength="20">
-    </div>
-    <div class="field">
-      <label>详细地址</label>
-      <textarea id="detail_address" placeholder="省/市/区/街道/门牌号" rows="2"></textarea>
-    </div>
-    <div class="field">
-      <label>收件人姓名</label>
-      <input type="text" id="recipient_name" placeholder="收件人姓名" maxlength="30">
-    </div>
-    <div class="field">
-      <label>联系电话</label>
-      <input type="tel" id="recipient_phone" placeholder="收件联系电话" maxlength="20">
-    </div>
-    <div class="field">
-      <label>昵称 <span class="field-hint">（可选）</span></label>
-      <input type="text" id="nickname" placeholder="如何称呼您" maxlength="30">
-    </div>
-    <button class="btn btn-save" id="btnSave" onclick="saveInfo()">💾 保存到本地</button>
+    <div id="fieldsContainer"></div>
+    <button class="btn btn-save" onclick="collectAndSave()">💾 保存到本地</button>
   </div>
 
   <!-- 分享设置 -->
   <div class="card">
     <div class="card-title"><span class="icon">📤</span>生成分享二维码</div>
+    <div class="checkbox-group" id="checkboxGroup"></div>
+    <div class="checkbox-sep"></div>
     <div class="checkbox-group">
-      <label><input type="checkbox" id="chkPhone" checked> 手机号</label>
-      <label><input type="checkbox" id="chkAddress" checked> 收件地址</label>
-      <label><input type="checkbox" id="chkNickname"> 昵称</label>
-    </div>
-    <div class="checkbox-group" style="margin-top:.4rem">
       <label><input type="checkbox" id="chkOneTime" checked> 🔒 一次性分享（仅限一人查看，30秒内可重试）</label>
     </div>
     <button class="btn btn-share" id="btnShare" onclick="generateQR()">🔗 生成二维码</button>
@@ -115,6 +113,7 @@
       <img id="qrImage" alt="二维码" style="display:none">
       <div id="qrError" style="display:none;color:#e74c3c;font-size:.85rem;margin:.5rem 0"></div>
       <a id="qrLink" target="_blank" rel="noopener" style="display:none;font-size:.8rem;color:#4a90d9;word-break:break-all"></a>
+      <button class="btn btn-copy" id="btnCopy" style="display:none" onclick="copyShareLink()">📋 复制分享链接</button>
       <div class="hint">⏱ 二维码有效期5分钟 · 开启"一次性分享"后仅限一人查看，加载失败30秒内可重试</div>
     </div>
   </div>
@@ -123,12 +122,31 @@
 </div>
 
 <script>
-// 部署时修改下方变量为实际后端 API 地址。
-// window.location.origin 自动适配当前域名（本地调试或 ngrok 穿透均可）。
+// ============================================================
+//  配置：API_BASE 自动适配当前域名
+// ============================================================
 const API_BASE = window.location.origin;
 
-const STORAGE_KEY = 'quick_send_profile';
+const STORAGE_KEY = 'quick_send_profile_v2';
 const DEVICE_ID_KEY = 'quick_send_device_id';
+
+let currentShareUrl = '';
+
+// ---- 默认字段 ----
+const DEFAULT_FIELDS = [
+  { id: 'phone',       label: '手机号',   value: '', deletable: false, type: 'tel' },
+  { id: 'address',     label: '收货地址', value: '', deletable: true,  type: 'textarea' },
+  { id: 'note',        label: '公司/备注', value: '', deletable: true,  type: 'text' },
+];
+
+let fields = [];
+
+// ---- 工具函数 ----
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
 function getDeviceId() {
   let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -138,10 +156,8 @@ function getDeviceId() {
   }
   return id;
 }
-
 const DEVICE_ID = getDeviceId();
 
-// ---- Toast ----
 let toastTimer;
 function showToast(msg, duration = 2000) {
   const el = document.getElementById('toast');
@@ -151,61 +167,187 @@ function showToast(msg, duration = 2000) {
   toastTimer = setTimeout(() => el.classList.remove('show'), duration);
 }
 
-// ---- localStorage 读写 ----
-function loadInfo() {
+// ---- localStorage ----
+function loadFields() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.fields && Array.isArray(data.fields) && data.fields.length > 0) {
+        // 合并默认字段（保留可能新增的默认字段）
+        const saved = data.fields;
+        const merged = [];
+        for (const df of DEFAULT_FIELDS) {
+          const existing = saved.find(f => f.id === df.id);
+          merged.push(existing || { ...df });
+        }
+        // 添加自定义字段
+        for (const f of saved) {
+          if (!DEFAULT_FIELDS.find(df => df.id === f.id)) {
+            merged.push(f);
+          }
+        }
+        return merged;
+      }
+    }
   } catch (e) { /* corrupted */ }
-  return {};
+  return DEFAULT_FIELDS.map(f => ({ ...f }));
 }
 
-function persistInfo(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function persistFields() {
+  collectValues(); // 先收集当前输入
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ fields }));
 }
 
-// ---- 表单填充与保存 ----
-function populateForm(data) {
-  document.getElementById('phone').value = data.phone || '';
-  document.getElementById('detail_address').value = data.detail_address || '';
-  document.getElementById('recipient_name').value = data.recipient_name || '';
-  document.getElementById('recipient_phone').value = data.recipient_phone || '';
-  document.getElementById('nickname').value = data.nickname || '';
+// ---- 从 DOM 收集值到 fields 数组 ----
+function collectValues() {
+  for (const f of fields) {
+    const el = document.getElementById('field_' + f.id);
+    if (el) f.value = el.value;
+    if (f.deletable) {
+      const labelEl = document.getElementById('label_' + f.id);
+      if (labelEl) f.label = labelEl.value.trim() || f.label;
+    }
+  }
 }
 
-function collectForm() {
-  return {
-    phone: document.getElementById('phone').value.trim(),
-    detail_address: document.getElementById('detail_address').value.trim(),
-    recipient_name: document.getElementById('recipient_name').value.trim(),
-    recipient_phone: document.getElementById('recipient_phone').value.trim(),
-    nickname: document.getElementById('nickname').value.trim(),
-    _updated_at: new Date().toISOString(),
-  };
+// ---- 渲染字段列表 ----
+function renderFields() {
+  const container = document.getElementById('fieldsContainer');
+  container.innerHTML = '';
+
+  for (const field of fields) {
+    const div = document.createElement('div');
+    div.className = 'field';
+
+    // header: label + delete button
+    const header = document.createElement('div');
+    header.className = 'field-header';
+
+    if (field.deletable) {
+      header.innerHTML = `<input type="text" class="field-label-input" id="label_${field.id}" value="${escapeHtml(field.label)}" placeholder="字段名">`;
+    } else {
+      header.innerHTML = `<label>${escapeHtml(field.label)} <span style="color:#bbb;font-size:.7rem">(必填)</span></label>`;
+    }
+
+    if (field.deletable) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-delete';
+      delBtn.textContent = '✕';
+      delBtn.title = '删除此字段';
+      delBtn.onclick = () => deleteField(field.id);
+      header.appendChild(delBtn);
+    }
+
+    div.appendChild(header);
+
+    // input
+    const val = field.value || '';
+    if (field.type === 'textarea') {
+      const ta = document.createElement('textarea');
+      ta.id = 'field_' + field.id;
+      ta.placeholder = field.label;
+      ta.rows = 2;
+      ta.value = val;
+      div.appendChild(ta);
+    } else {
+      const inp = document.createElement('input');
+      inp.type = field.type;
+      inp.id = 'field_' + field.id;
+      inp.placeholder = field.label;
+      inp.value = val;
+      if (field.type === 'tel') inp.maxLength = 20;
+      else inp.maxLength = 50;
+      div.appendChild(inp);
+    }
+
+    container.appendChild(div);
+  }
+
+  // + 添加字段按钮
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-add';
+  addBtn.textContent = '+ 添加字段';
+  addBtn.onclick = addField;
+  container.appendChild(addBtn);
+
+  // 同步渲染勾选框
+  renderCheckboxes();
 }
 
-function saveInfo() {
-  const data = collectForm();
-  persistInfo(data);
+// ---- 渲染分享勾选框 ----
+function renderCheckboxes() {
+  const container = document.getElementById('checkboxGroup');
+  container.innerHTML = '';
+
+  for (const field of fields) {
+    const label = document.createElement('label');
+    const checked = field.id === 'phone' ? ' checked' : (field.value ? ' checked' : '');
+    label.innerHTML = `<input type="checkbox" class="field-check" data-field-id="${field.id}"${checked}> ${escapeHtml(field.label || '(未命名)')}`;
+    container.appendChild(label);
+  }
+}
+
+// ---- 添加字段 ----
+function addField() {
+  const label = (prompt('请输入新字段名称（如：邮箱、微信号）：') || '').trim();
+  if (!label) return;
+
+  fields.push({
+    id: 'custom_' + Date.now(),
+    label: label,
+    value: '',
+    deletable: true,
+    type: 'text',
+  });
+
+  renderFields();
+  persistFields();
+  showToast('✅ 字段已添加');
+}
+
+// ---- 删除字段 ----
+function deleteField(id) {
+  const field = fields.find(f => f.id === id);
+  if (!field) return;
+  if (!confirm(`确定删除"${field.label}"字段及其内容吗？`)) return;
+
+  fields = fields.filter(f => f.id !== id);
+  renderFields();
+  persistFields();
+  showToast('🗑 字段已删除');
+}
+
+// ---- 收集并保存 ----
+function collectAndSave() {
+  collectValues();
+  persistFields();
+  renderCheckboxes();
   showToast('✅ 信息已保存到本地');
 }
 
 // ---- 生成二维码 ----
 async function generateQR() {
-  const data = collectForm();
-  persistInfo(data); // 自动保存
+  collectValues();
+  persistFields();
 
+  // 收集勾选的字段
   const shareData = {};
-  if (document.getElementById('chkPhone').checked && data.phone) {
-    shareData.phone = data.phone;
-  }
-  if (document.getElementById('chkAddress').checked) {
-    if (data.detail_address) shareData.detail_address = data.detail_address;
-    if (data.recipient_name) shareData.recipient_name = data.recipient_name;
-    if (data.recipient_phone) shareData.recipient_phone = data.recipient_phone;
-  }
-  if (document.getElementById('chkNickname').checked && data.nickname) {
-    shareData.nickname = data.nickname;
+  const checks = document.querySelectorAll('.field-check:checked');
+  for (const cb of checks) {
+    const fid = cb.dataset.fieldId;
+    const field = fields.find(f => f.id === fid);
+    if (!field) continue;
+    const el = document.getElementById('field_' + fid);
+    const value = el ? el.value.trim() : field.value;
+    if (value) {
+      // 用字段的标签作为 key
+      if (field.deletable) {
+        const labelEl = document.getElementById('label_' + fid);
+        if (labelEl) field.label = labelEl.value.trim() || field.label;
+      }
+      shareData[field.label] = value;
+    }
   }
 
   if (Object.keys(shareData).length === 0) {
@@ -221,7 +363,11 @@ async function generateQR() {
     const resp = await fetch(`${API_BASE}/create_share`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ data: shareData, expire_minutes: 5, one_time: document.getElementById('chkOneTime').checked }),
+      body: JSON.stringify({
+        data: shareData,
+        expire_minutes: 5,
+        one_time: document.getElementById('chkOneTime').checked,
+      }),
     });
     if (!resp.ok) {
       const errText = await resp.text();
@@ -229,7 +375,7 @@ async function generateQR() {
     }
     const { token } = await resp.json();
 
-    const shareUrl = `${API_BASE}/s/${token}`;
+    currentShareUrl = `${API_BASE}/s/${token}`;
     const qrUrl = `${API_BASE}/qrcode/${token}`;
 
     const qrSection = document.getElementById('qrSection');
@@ -237,18 +383,20 @@ async function generateQR() {
     const qrLoading = document.getElementById('qrLoading');
     const qrError = document.getElementById('qrError');
     const qrLink = document.getElementById('qrLink');
+    const btnCopy = document.getElementById('btnCopy');
 
-    // 重置状态：显示 loading，隐藏图片/错误/链接
     qrSection.style.display = 'block';
     qrImg.style.display = 'none';
     qrLoading.style.display = 'block';
     qrError.style.display = 'none';
     qrLink.style.display = 'none';
+    btnCopy.style.display = 'none';
     qrImg.removeAttribute('src');
 
     qrImg.onload = function() {
       qrLoading.style.display = 'none';
       qrImg.style.display = 'inline';
+      btnCopy.style.display = 'block';
     };
 
     qrImg.onerror = function() {
@@ -256,12 +404,13 @@ async function generateQR() {
       qrError.style.display = 'block';
       qrError.textContent = '⚠️ 二维码图片加载失败，请点击下方链接手动打开分享页：';
       qrLink.style.display = 'block';
-      qrLink.href = shareUrl;
-      qrLink.textContent = shareUrl;
+      qrLink.href = currentShareUrl;
+      qrLink.textContent = currentShareUrl;
+      btnCopy.style.display = 'block';
     };
 
     qrImg.src = qrUrl;
-    qrImg.alt = `分享链接`;
+    qrImg.alt = '分享二维码';
     showToast('✅ 二维码已生成');
   } catch (err) {
     showToast(`❌ 生成失败：${err.message}`);
@@ -271,19 +420,36 @@ async function generateQR() {
   }
 }
 
+// ---- 复制分享链接 ----
+async function copyShareLink() {
+  if (!currentShareUrl) return;
+  try {
+    await navigator.clipboard.writeText(currentShareUrl);
+    showToast('📋 链接已复制，可粘贴发送给好友');
+  } catch (e) {
+    // 降级：选中文本框让用户手动复制
+    const input = document.createElement('input');
+    input.value = currentShareUrl;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showToast('📋 链接已复制');
+  }
+}
+
 // ---- 初始化 ----
 (function init() {
-  const saved = loadInfo();
-  if (Object.keys(saved).length > 0) {
-    populateForm(saved);
-  }
-  // 从 URL 参数自动填充（可用于 URL 传参场景）
+  fields = loadFields();
+  renderFields();
+
+  // 从 URL 参数自动填充手机号（可用于外部调起）
   const params = new URLSearchParams(window.location.search);
-  for (const key of ['phone','detail_address','recipient_name','recipient_phone','nickname']) {
-    if (params.has(key)) {
-      const el = document.getElementById(key);
-      if (el && !el.value) el.value = params.get(key);
-    }
+  const phoneParam = params.get('phone');
+  if (phoneParam) {
+    const phoneField = fields.find(f => f.id === 'phone');
+    if (phoneField) phoneField.value = phoneParam;
+    renderFields();
   }
 })();
 </script>

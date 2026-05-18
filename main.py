@@ -50,15 +50,6 @@ class ShareResponse(BaseModel):
     token: str
 
 
-FIELD_LABELS = {
-    "phone": "手机号",
-    "detail_address": "详细地址",
-    "recipient_name": "收件人",
-    "recipient_phone": "联系电话",
-    "nickname": "昵称",
-}
-
-
 @app.post("/create_share", response_model=ShareResponse)
 async def create_share(req: ShareRequest):
     token = secrets.token_urlsafe(16)
@@ -101,8 +92,7 @@ async def view_share(token: str):
 
 def _render_share_page(data: dict) -> str:
     rows = []
-    for key, label in FIELD_LABELS.items():
-        value = data.get(key, "")
+    for label, value in data.items():
         if value and str(value).strip():
             rows.append(
                 f"<tr><td class='label'>{label}</td>"
