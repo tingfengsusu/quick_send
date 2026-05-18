@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>个人信息速递</title>
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -105,7 +108,10 @@
     </div>
     <button class="btn btn-share" id="btnShare" onclick="generateQR()">🔗 生成二维码</button>
     <div class="qr-section" id="qrSection" style="display:none">
-      <img id="qrImage" alt="二维码">
+      <div id="qrLoading" style="display:none;color:#888;font-size:.85rem;margin:.5rem 0">⏳ 加载二维码中...</div>
+      <img id="qrImage" alt="二维码" style="display:none">
+      <div id="qrError" style="display:none;color:#e74c3c;font-size:.85rem;margin:.5rem 0"></div>
+      <a id="qrLink" target="_blank" rel="noopener" style="display:none;font-size:.8rem;color:#4a90d9;word-break:break-all"></a>
       <div class="hint">⏱ 二维码有效期5分钟，扫描后对方可查看你选择的信息</div>
     </div>
   </div>
@@ -114,11 +120,9 @@
 </div>
 
 <script>
-// ============================================================
-//  配置区：部署时修改为实际后端 API 地址
-// ============================================================
-const API_BASE = 'https://clip-say-lyricism.ngrok-free.dev';
-// ============================================================
+// 部署时修改下方变量为实际后端 API 地址。
+// window.location.origin 自动适配当前域名（本地调试或 ngrok 穿透均可）。
+const API_BASE = window.location.origin;
 
 const STORAGE_KEY = 'quick_send_profile';
 const DEVICE_ID_KEY = 'quick_send_device_id';
@@ -222,10 +226,39 @@ async function generateQR() {
     }
     const { token } = await resp.json();
 
+    const shareUrl = `${API_BASE}/s/${token}`;
+    const qrUrl = `${API_BASE}/qrcode/${token}`;
+
+    const qrSection = document.getElementById('qrSection');
     const qrImg = document.getElementById('qrImage');
-    qrImg.src = `${API_BASE}/qrcode/${token}`;
-    qrImg.alt = `分享链接 token=${token}`;
-    document.getElementById('qrSection').style.display = 'block';
+    const qrLoading = document.getElementById('qrLoading');
+    const qrError = document.getElementById('qrError');
+    const qrLink = document.getElementById('qrLink');
+
+    // 重置状态：显示 loading，隐藏图片/错误/链接
+    qrSection.style.display = 'block';
+    qrImg.style.display = 'none';
+    qrLoading.style.display = 'block';
+    qrError.style.display = 'none';
+    qrLink.style.display = 'none';
+    qrImg.removeAttribute('src');
+
+    qrImg.onload = function() {
+      qrLoading.style.display = 'none';
+      qrImg.style.display = 'inline';
+    };
+
+    qrImg.onerror = function() {
+      qrLoading.style.display = 'none';
+      qrError.style.display = 'block';
+      qrError.textContent = '⚠️ 二维码图片加载失败，请点击下方链接手动打开分享页：';
+      qrLink.style.display = 'block';
+      qrLink.href = shareUrl;
+      qrLink.textContent = shareUrl;
+    };
+
+    qrImg.src = qrUrl;
+    qrImg.alt = `分享链接`;
     showToast('✅ 二维码已生成');
   } catch (err) {
     showToast(`❌ 生成失败：${err.message}`);
