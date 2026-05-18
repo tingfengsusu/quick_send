@@ -1,0 +1,25 @@
+/* 个人信息速递 — 补充样式（主样式已内联在 index.html 中） */
+
+/* 暗色主题适配（可选） */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+  }
+  .card {
+    background: #252540;
+    box-shadow: 0 2px 12px rgba(0,0,0,.25);
+  }
+  .card-title { color: #e0e0e0; }
+  .field input, .field textarea {
+    background: #1a1a2e;
+    border-color: #3a3a5c;
+    color: #e0e0e0;
+  }
+  .field input:focus, .field textarea:focus { border-color: #5a9ae6; }
+  .field label { color: #999; }
+  .checkbox-group label { color: #ccc; }
+  .btn-save { background: #2a2a4a; color: #5a9ae6; }
+  .header h1 { color: #e0e0e0; }
+  .footer { color: #555; }
+}

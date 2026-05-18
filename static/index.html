@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>个人信息速递</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:#f0f4f8;color:#2c3e50;min-height:100vh;padding:1rem;
+    display:flex;justify-content:center;align-items:flex-start;
+  }
+  .container{max-width:420px;width:100%;padding-top:1rem}
+  .header{text-align:center;margin-bottom:1.25rem}
+  .header h1{font-size:1.35rem;font-weight:700;color:#1a1a2e}
+  .header .sub{font-size:.78rem;color:#999;margin-top:.25rem}
+  .card{
+    background:#fff;border-radius:14px;padding:1.25rem 1.1rem;
+    box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:.85rem
+  }
+  .card-title{font-size:.95rem;font-weight:600;color:#1a1a2e;margin-bottom:.85rem;display:flex;align-items:center;gap:.35rem}
+  .card-title .icon{font-size:1.1rem}
+  .field{margin-bottom:.75rem}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:.8rem;color:#777;margin-bottom:.3rem}
+  .field input,.field textarea{
+    width:100%;padding:.55rem .65rem;border:1px solid #e0e0e0;border-radius:8px;
+    font-size:.9rem;color:#2c3e50;outline:none;transition:border-color .2s;
+    font-family:inherit;resize:vertical
+  }
+  .field input:focus,.field textarea:focus{border-color:#4a90d9}
+  .field textarea{min-height:3.5rem}
+  .field-hint{font-size:.72rem;color:#bbb;margin-top:.2rem}
+  .btn{
+    display:block;width:100%;padding:.6rem;border:none;border-radius:8px;
+    font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s,transform .1s;
+    font-family:inherit
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-save{background:#f0f4f8;color:#4a90d9;margin-top:.5rem}
+  .btn-share{background:#1a1a2e;color:#fff;margin-top:.85rem}
+  .btn:disabled{opacity:.5;pointer-events:none}
+  .checkbox-group{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin-bottom:.25rem}
+  .checkbox-group label{
+    display:flex;align-items:center;gap:.3rem;font-size:.85rem;color:#444;cursor:pointer
+  }
+  .checkbox-group input[type=checkbox]{width:1rem;height:1rem;accent-color:#1a1a2e}
+  .qr-section{text-align:center}
+  .qr-section img{max-width:200px;width:100%;border-radius:8px;margin:.6rem 0}
+  .qr-section .hint{font-size:.75rem;color:#999;margin-top:.4rem}
+  .toast{
+    position:fixed;top:1rem;left:50%;transform:translateX(-50%);
+    background:#1a1a2e;color:#fff;padding:.5rem 1.2rem;border-radius:20px;
+    font-size:.8rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none
+  }
+  .toast.show{opacity:1}
+  .footer{text-align:center;margin-top:1.5rem;font-size:.7rem;color:#ccc}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>个人信息速递</h1>
+    <div class="sub">安全 · 快捷 · 阅后即焚</div>
+  </div>
+
+  <!-- 信息表单 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📝</span>我的信息</div>
+    <div class="field">
+      <label>手机号</label>
+      <input type="tel" id="phone" placeholder="请输入手机号" maxlength="20">
+    </div>
+    <div class="field">
+      <label>详细地址</label>
+      <textarea id="detail_address" placeholder="省/市/区/街道/门牌号" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label>收件人姓名</label>
+      <input type="text" id="recipient_name" placeholder="收件人姓名" maxlength="30">
+    </div>
+    <div class="field">
+      <label>联系电话</label>
+      <input type="tel" id="recipient_phone" placeholder="收件联系电话" maxlength="20">
+    </div>
+    <div class="field">
+      <label>昵称 <span class="field-hint">（可选）</span></label>
+      <input type="text" id="nickname" placeholder="如何称呼您" maxlength="30">
+    </div>
+    <button class="btn btn-save" id="btnSave" onclick="saveInfo()">💾 保存到本地</button>
+  </div>
+
+  <!-- 分享设置 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📤</span>生成分享二维码</div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkPhone" checked> 手机号</label>
+      <label><input type="checkbox" id="chkAddress" checked> 收件地址</label>
+      <label><input type="checkbox" id="chkNickname"> 昵称</label>
+    </div>
+    <button class="btn btn-share" id="btnShare" onclick="generateQR()">🔗 生成二维码</button>
+    <div class="qr-section" id="qrSection" style="display:none">
+      <img id="qrImage" alt="二维码">
+      <div class="hint">⏱ 二维码有效期5分钟，扫描后对方可查看你选择的信息</div>
+    </div>
+  </div>
+
+  <div class="footer">个人信息速递 V1.0 · 数据仅保存在您的设备中</div>
+</div>
+
+<script>
+// ============================================================
+//  配置区：部署时修改为实际后端 API 地址
+// ============================================================
+const API_BASE = 'http://localhost:8000';
+// ============================================================
+
+const STORAGE_KEY = 'quick_send_profile';
+const DEVICE_ID_KEY = 'quick_send_device_id';
+
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+
+const DEVICE_ID = getDeviceId();
+
+// ---- Toast ----
+let toastTimer;
+function showToast(msg, duration = 2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ---- localStorage 读写 ----
+function loadInfo() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* corrupted */ }
+  return {};
+}
+
+function persistInfo(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ---- 表单填充与保存 ----
+function populateForm(data) {
+  document.getElementById('phone').value = data.phone || '';
+  document.getElementById('detail_address').value = data.detail_address || '';
+  document.getElementById('recipient_name').value = data.recipient_name || '';
+  document.getElementById('recipient_phone').value = data.recipient_phone || '';
+  document.getElementById('nickname').value = data.nickname || '';
+}
+
+function collectForm() {
+  return {
+    phone: document.getElementById('phone').value.trim(),
+    detail_address: document.getElementById('detail_address').value.trim(),
+    recipient_name: document.getElementById('recipient_name').value.trim(),
+    recipient_phone: document.getElementById('recipient_phone').value.trim(),
+    nickname: document.getElementById('nickname').value.trim(),
+    _updated_at: new Date().toISOString(),
+  };
+}
+
+function saveInfo() {
+  const data = collectForm();
+  persistInfo(data);
+  showToast('✅ 信息已保存到本地');
+}
+
+// ---- 生成二维码 ----
+async function generateQR() {
+  const data = collectForm();
+  persistInfo(data); // 自动保存
+
+  const shareData = {};
+  if (document.getElementById('chkPhone').checked && data.phone) {
+    shareData.phone = data.phone;
+  }
+  if (document.getElementById('chkAddress').checked) {
+    if (data.detail_address) shareData.detail_address = data.detail_address;
+    if (data.recipient_name) shareData.recipient_name = data.recipient_name;
+    if (data.recipient_phone) shareData.recipient_phone = data.recipient_phone;
+  }
+  if (document.getElementById('chkNickname').checked && data.nickname) {
+    shareData.nickname = data.nickname;
+  }
+
+  if (Object.keys(shareData).length === 0) {
+    showToast('⚠️ 请至少选择一个有内容的字段');
+    return;
+  }
+
+  const btn = document.getElementById('btnShare');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+
+  try {
+    const resp = await fetch(`${API_BASE}/create_share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: shareData, expire_minutes: 5 }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(errText || `HTTP ${resp.status}`);
+    }
+    const { token } = await resp.json();
+
+    const qrImg = document.getElementById('qrImage');
+    qrImg.src = `${API_BASE}/qrcode/${token}`;
+    qrImg.alt = `分享链接 token=${token}`;
+    document.getElementById('qrSection').style.display = 'block';
+    showToast('✅ 二维码已生成');
+  } catch (err) {
+    showToast(`❌ 生成失败：${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔗 生成二维码';
+  }
+}
+
+// ---- 初始化 ----
+(function init() {
+  const saved = loadInfo();
+  if (Object.keys(saved).length > 0) {
+    populateForm(saved);
+  }
+  // 从 URL 参数自动填充（可用于 URL 传参场景）
+  const params = new URLSearchParams(window.location.search);
+  for (const key of ['phone','detail_address','recipient_name','recipient_phone','nickname']) {
+    if (params.has(key)) {
+      const el = document.getElementById(key);
+      if (el && !el.value) el.value = params.get(key);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
