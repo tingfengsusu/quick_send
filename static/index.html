@@ -106,13 +106,16 @@
       <label><input type="checkbox" id="chkAddress" checked> 收件地址</label>
       <label><input type="checkbox" id="chkNickname"> 昵称</label>
     </div>
+    <div class="checkbox-group" style="margin-top:.4rem">
+      <label><input type="checkbox" id="chkOneTime" checked> 🔒 一次性分享（仅限一人查看，30秒内可重试）</label>
+    </div>
     <button class="btn btn-share" id="btnShare" onclick="generateQR()">🔗 生成二维码</button>
     <div class="qr-section" id="qrSection" style="display:none">
       <div id="qrLoading" style="display:none;color:#888;font-size:.85rem;margin:.5rem 0">⏳ 加载二维码中...</div>
       <img id="qrImage" alt="二维码" style="display:none">
       <div id="qrError" style="display:none;color:#e74c3c;font-size:.85rem;margin:.5rem 0"></div>
       <a id="qrLink" target="_blank" rel="noopener" style="display:none;font-size:.8rem;color:#4a90d9;word-break:break-all"></a>
-      <div class="hint">⏱ 二维码有效期5分钟，扫描后对方可查看你选择的信息</div>
+      <div class="hint">⏱ 二维码有效期5分钟 · 开启"一次性分享"后仅限一人查看，加载失败30秒内可重试</div>
     </div>
   </div>
 
@@ -218,7 +221,7 @@ async function generateQR() {
     const resp = await fetch(`${API_BASE}/create_share`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ data: shareData, expire_minutes: 5 }),
+      body: JSON.stringify({ data: shareData, expire_minutes: 5, one_time: document.getElementById('chkOneTime').checked }),
     });
     if (!resp.ok) {
       const errText = await resp.text();

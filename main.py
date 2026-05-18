@@ -1,5 +1,6 @@
 import os
 import secrets
+import time
 from io import BytesIO
 
 import qrcode
@@ -36,10 +37,13 @@ app.add_middleware(
 
 cache = TTLCache(maxsize=100, ttl=CACHE_TTL_SECONDS)
 
+GRACE_SECONDS = 30  # 一次性分享缓冲期
+
 
 class ShareRequest(BaseModel):
     data: dict
     expire_minutes: int = 5
+    one_time: bool = False
 
 
 class ShareResponse(BaseModel):
@@ -58,16 +62,44 @@ FIELD_LABELS = {
 @app.post("/create_share", response_model=ShareResponse)
 async def create_share(req: ShareRequest):
     token = secrets.token_urlsafe(16)
-    cache[token] = req.data
+    cache[token] = {
+        "data": req.data,
+        "expire_at": time.time() + req.expire_minutes * 60,
+        "one_time": req.one_time,
+        "first_access_at": None,
+        "grace_until": None,
+    }
     return {"token": token}
 
 
 @app.get("/s/{token}", response_class=HTMLResponse)
 async def view_share(token: str):
-    data = cache.get(token)
-    if data is None:
-        return _expired_page()
+    entry = cache.get(token)
+    if entry is None:
+        return _expired_page("该分享链接不存在或已过期。")
 
+    now = time.time()
+
+    # 绝对过期检查
+    if now >= entry["expire_at"]:
+        return _expired_page("该分享链接已超过有效期（5分钟）。")
+
+    # 一次性分享逻辑
+    if entry["one_time"]:
+        if entry["first_access_at"] is None:
+            # 首次访问：记录时间，开启缓冲期
+            entry["first_access_at"] = now
+            entry["grace_until"] = now + GRACE_SECONDS
+            cache[token] = entry
+        elif now >= entry["grace_until"]:
+            # 缓冲期已过
+            return _expired_page("该分享链接已被查看过，且已超过30秒缓冲期。")
+        # else: 缓冲期内再次访问，允许通过
+
+    return _render_share_page(entry["data"])
+
+
+def _render_share_page(data: dict) -> str:
     rows = []
     for key, label in FIELD_LABELS.items():
         value = data.get(key, "")
@@ -121,24 +153,24 @@ async def get_qrcode(token: str):
     return StreamingResponse(buf, media_type="image/png")
 
 
-def _expired_page() -> str:
-    return """<!DOCTYPE html>
+def _expired_page(reason: str = "该分享链接不存在或已过期。") -> str:
+    return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>链接已失效</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}
-.card{background:#fff;padding:2rem 1.8rem;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);text-align:center;max-width:360px;width:90%}
-h1{font-size:1.2rem;color:#e74c3c;margin-bottom:.8rem}
-p{color:#888;font-size:.9rem}
+body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5}}
+.card{{background:#fff;padding:2rem 1.8rem;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);text-align:center;max-width:360px;width:90%}}
+h1{{font-size:1.2rem;color:#e74c3c;margin-bottom:.8rem}}
+p{{color:#888;font-size:.9rem}}
 </style>
 </head>
 <body>
 <div class="card">
 <h1>链接已失效</h1>
-<p>该分享链接不存在或已过期。</p>
+<p>{reason}</p>
 </div>
 </body>
 </html>"""
